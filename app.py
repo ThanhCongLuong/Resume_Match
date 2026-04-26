@@ -3,6 +3,7 @@ from groq import Groq
 import PyPDF2
 import io
 import json
+import streamlit as st
 
 # Cấu hình 
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
