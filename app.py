@@ -4,8 +4,8 @@ import PyPDF2
 import io
 import json
 
-# Cấu hình Groq
-client = Groq(api_key="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")
+# Cấu hình 
+client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
 def extract_text_from_pdf(uploaded_file):
     """Trích xuất văn bản từ file PDF tải lên"""
