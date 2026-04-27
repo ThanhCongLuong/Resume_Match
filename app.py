@@ -17,34 +17,41 @@ def extract_text_from_pdf(uploaded_file):
     return text
 
 def analyze_matching(jd_text, cv_text):
-    prompt = f"""
-    Hãy phân tích CV và JD sau để so khớp. 
-    Lưu ý: Phần 'summary' phải là tóm tắt về năng lực của ứng viên dựa trên CV, không phải tóm tắt JD.
+    # Bước 1: Làm sạch văn bản, loại bỏ các ký tự surrogate không hợp lệ
+    jd_clean = jd_text.encode('utf-8', 'ignore').decode('utf-8')
+    cv_clean = cv_text.encode('utf-8', 'ignore').decode('utf-8')
 
-    Yêu cầu trả về JSON duy nhất:
+    # Bước 2: Prompt sạch (không dùng emoji bên trong biến gửi lên AI)
+    prompt = f"""
+    Analyze the following CV and JD for matching. 
+    Note: The 'cv_summary' must be a summary of the candidate's capabilities based on the CV.
+
+    Return a single JSON object:
     {{
-        "score": (số nguyên từ 0-100),
-        "cv_summary": "Tóm tắt ngắn gọn 3 -4 câu về quê quán(BẮT BUỘC), học vấn, kinh nghiệm, TOÀN BỘ nơi đã từng làm việc và thế mạnh của ứng viên trong CV",
-        "pros": ["điểm mạnh phù hợp với JD"],
-        "cons": ["điểm còn thiếu hoặc chưa đạt so với JD"]
+        "score": (integer from 0-100),
+        "cv_summary": "Short summary 3-4 sentences about hometown (MANDATORY), education, experience, ALL previous workplaces, and strengths.",
+        "pros": ["strengths matching the JD"],
+        "cons": ["missing skills or gaps compared to the JD"]
     }}
     
-    Nội dung JD: {jd_text[:1500]}
+    JD Content: {jd_clean[:1500]}
     ---
-    Nội dung CV: {cv_text[:2000]}
+    CV Content: {cv_clean[:2000]}
     """
 
     try:
         completion = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[
-                {"role": "system", "content": "Bạn là chuyên gia săn đầu người (Headhunter). Hãy phản hồi bằng TIẾNG ANH và CHỈ xuất file JSON."},
+                {"role": "system", "content": "You are a professional Headhunter. Respond in ENGLISH and ONLY output JSON."},
                 {"role": "user", "content": prompt}
             ],
             response_format={"type": "json_object"}
         )
         return json.loads(completion.choices[0].message.content)
     except Exception as e:
+        # Nếu vẫn lỗi, in ra console để kiểm tra chính xác vị trí
+        print(f"Error details: {str(e)}") 
         return {"error": str(e)}
 # Giao diện Streamlit
 st.set_page_config(page_title="AI CV Matcher", layout="wide")
